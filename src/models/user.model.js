@@ -28,7 +28,7 @@ const userSchema = new mongoose.Schema({
   },
   avatar: {
     type: String,
-    default: null,
+    default: "https://img.freepik.com/free-vector/user-blue-gradient_78370-4692.jpg?uid=R156714607&ga=GA1.1.1646366203.1721816203&semt=ais_items_boosted&w=740",
   },
   verificationToken: {
     type: String,
