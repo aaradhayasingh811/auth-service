@@ -12,7 +12,7 @@ const verifyToken = (req, res, next) => {
   try {
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
     req.user = decoded; 
-    console.log("✅ Decoded token:", decoded); // 👈 Add this
+    // console.log("✅ Decoded token:", decoded); // 👈 Add this
 
     console.log(`Decoded user:`, req.user);
     next();

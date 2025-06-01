@@ -8,7 +8,7 @@ const { validationResult } = require("express-validator");
 const crypto = require("crypto");
 const sendEmail = require("../utils/email.js");
 const { generateToken, verifyToken } = require("../utils/token.js");
-const { sendVerificationEmail } = require("../utils/verification.js");
+const { sendVerificationemailOrUsername } = require("../utils/verification.js");
 
 exports.googleAuth = async (req, res) => {
   const { token } = req.body;
@@ -20,15 +20,15 @@ exports.googleAuth = async (req, res) => {
     });
 
     const payload = ticket.getPayload();
-    const { sub, email, name, picture } = payload;
+    const { sub, emailOrUsername, name, picture } = payload;
 
-    let user = await User.findOne({ email });
+    let user = await User.findOne({ emailOrUsername });
 
     if (!user) {
-      const username = email.split('@')[0] + Math.floor(Math.random() * 10000);
+      const username = emailOrUsername.split('@')[0] + Math.floor(Math.random() * 10000);
       user = new User({
         name,
-        email,
+        emailOrUsername,
         username,
         avatar: picture,
         googleId: sub,
@@ -50,7 +50,7 @@ exports.googleAuth = async (req, res) => {
 
     res.status(200).json({
       token: jwtToken,
-      user: { id: user._id, name: user.name, email: user.email },
+      user: { id: user._id, name: user.name, emailOrUsername: user.emailOrUsername },
     });
   } catch (error) {
     console.error("Google Auth Error:", error);
@@ -85,8 +85,8 @@ exports.register = async (req, res) => {
     // Save user to database
     await user.save();
 
-    // Send verification email (baad me theek krna)
-    // await sendVerificationEmail(user);
+    // Send verification emailOrUsername (baad me theek krna)
+    // await sendVerificationemailOrUsername(user);
 
     res.status(201).json({ message: "User registered successfully" });
   } catch (error) {
@@ -99,14 +99,14 @@ exports.login = async (req, res) => {
   try {
     // console.log("Request Body:", req.body);
 
-    const { email, password, username } = req.body;
+    const { emailOrUsername, password } = req.body;
 
-    if (!password || (!email?.trim() && !username?.trim())) {
-      return res.status(400).json({ message: "Email/Username and password are required" });
+    if (!password || (!emailOrUsername?.trim())) {
+      return res.status(400).json({ message: "emailOrUsername/Username and password are required" });
     }
     // console.log("hii")
     const user = await User.findOne({
-      $or: [{ email: email?.trim() }, { username: username?.trim() }],
+      $or: [{ email: emailOrUsername?.trim() }, { username: emailOrUsername?.trim() }],
     });
     // console.log("Found User:", user);
 
@@ -119,6 +119,8 @@ exports.login = async (req, res) => {
       return res.status(401).json({ message: "Invalid password" });
     }
 
+    // console.log("found");
+
     const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, { expiresIn: "1d" });
 
 
@@ -129,8 +131,9 @@ exports.login = async (req, res) => {
     });
 
     res.status(200).json({
+      success: true,
       token,
-      user: { id: user._id, name: user.name, email: user.email },
+      user: { id: user._id, name: user.name, emailOrUsername: user.emailOrUsername },
     });
   } catch (error) {
     console.error("Login error:", error);
@@ -168,7 +171,7 @@ exports.getProfile = async (req, res) => {
 exports.updateProfile = async (req, res) => {
   try {
     const userId = req.user.id; // Assuming user ID is stored in req.user
-    const { name, email, avatar } = req.body;
+    const { name, emailOrUsername, avatar } = req.body;
 
     // Validate input
     const errors = validationResult(req);
@@ -179,7 +182,7 @@ exports.updateProfile = async (req, res) => {
     // Update user profile
     const updatedUser = await User.findByIdAndUpdate(
       userId,
-      { name, email, avatar },
+      { name, emailOrUsername, avatar },
       { new: true }
     ).select("-password -refreshToken");
     if (!updatedUser) {
@@ -210,7 +213,7 @@ exports.deleteProfile = async (req, res) => {
 
 // exports.forgotPassword = async (req, res) => {
 //   try {
-//     const { email } = req.body;
+//     const { emailOrUsername } = req.body;
 
 //     // Validate input
 //     const errors = validationResult(req);
@@ -218,8 +221,8 @@ exports.deleteProfile = async (req, res) => {
 //       return res.status(400).json({ errors: errors.array() });
 //     }
 
-//     // Find user by email
-//     const user = await User.findOne({ email });
+//     // Find user by emailOrUsername
+//     const user = await User.findOne({ emailOrUsername });
 //     if (!user) {
 //       return res.status(404).json({ message: "User not found" });
 //     }
@@ -230,14 +233,14 @@ exports.deleteProfile = async (req, res) => {
 //     user.resetPasswordTokenExpiry = Date.now() + 3600000; // 1 hour
 //     await user.save();
 
-//     // Send reset password email
-//     await sendEmail({
-//       to: user.email,
+//     // Send reset password emailOrUsername
+//     await sendemailOrUsername({
+//       to: user.emailOrUsername,
 //       subject: "Reset Password",
 //       text: `Click the link to reset your password: ${process.env.FRONTEND_URL}/reset-password/${resetToken}`,
 //     });
 
-//     res.status(200).json({ message: "Reset password email sent" });
+//     res.status(200).json({ message: "Reset password emailOrUsername sent" });
 //   } catch (error) {
 //     console.error("Error in forgotPassword:", error);
 //     res.status(500).json({ message: "Server error" });
@@ -282,7 +285,7 @@ const generateOtp = () => Math.floor(100000 + Math.random() * 900000).toString()
 
 exports.sendOtp = async (req, res) => {
   const { email } = req.body;
-  if (!email) return res.status(400).json({ success: false, message: "Email required" });
+  if (!email) return res.status(400).json({ success: false, message: "email required" });
 
   try {
     const user = await User.findOne({ email });
@@ -301,7 +304,7 @@ exports.sendOtp = async (req, res) => {
       text: `Your OTP for password reset is: ${otp}. It expires in 10 minutes.`,
     });
 
-    res.json({ success: true, message: "OTP sent to your email." });
+    res.json({ success: true, message: "OTP sent to your emailOrUsername." });
   } catch (error) {
     console.error("sendOtp error:", error);
     res.status(500).json({ success: false, message: "Server error" });
@@ -310,7 +313,7 @@ exports.sendOtp = async (req, res) => {
 
 exports.verifyOtp = async (req, res) => {
   const { email, otp } = req.body;
-  if (!email || !otp) return res.status(400).json({ success: false, message: "Email and OTP required" });
+  if (!email || !otp) return res.status(400).json({ success: false, message: "email and OTP required" });
 
   try {
     const user = await User.findOne({ email });
