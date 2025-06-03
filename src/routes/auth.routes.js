@@ -19,7 +19,7 @@ const {verifyToken} = require('../utils/token.js');
 router.post('/register', register);
 router.post('/login', login);
 router.post('/logout',verifyToken, logout);
-router.post('/auth/google',verifyToken, googleAuth);  //to do 
+router.post('/auth/google', googleAuth); 
 router.post("/send-otp",sendOtp);
 router.post("/verify-otp", verifyOtp);
 router.post("/reset-password", resetPassword);

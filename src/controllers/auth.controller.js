@@ -28,7 +28,7 @@ exports.googleAuth = async (req, res) => {
       const username = emailOrUsername.split('@')[0] + Math.floor(Math.random() * 10000);
       user = new User({
         name,
-        emailOrUsername,
+        email,
         username,
         avatar: picture,
         googleId: sub,
@@ -127,7 +127,7 @@ exports.login = async (req, res) => {
     res.cookie("token", token, {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
-      maxAge: 3600000,
+      maxAge: 36000000,
     });
 
     res.status(200).json({
