@@ -20,12 +20,12 @@ exports.googleAuth = async (req, res) => {
     });
 
     const payload = ticket.getPayload();
-    const { sub, emailOrUsername, name, picture } = payload;
+    const { sub, email, name, picture } = payload;
 
-    let user = await User.findOne({ emailOrUsername });
+    let user = await User.findOne({ email });
 
     if (!user) {
-      const username = emailOrUsername.split('@')[0] + Math.floor(Math.random() * 10000);
+      const username = email.split('@')[0] + Math.floor(Math.random() * 10000);
       user = new User({
         name,
         email,
@@ -46,6 +46,7 @@ exports.googleAuth = async (req, res) => {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
       maxAge: 3600000,
+      sameSite: "None", 
     });
 
     res.status(200).json({
@@ -125,10 +126,11 @@ exports.login = async (req, res) => {
 
 
     res.cookie("token", token, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      maxAge: 36000000,
-    });
+  httpOnly: true,
+  secure: process.env.NODE_ENV === "production", 
+  sameSite: "None", 
+  maxAge: 3600000,
+});
 
     res.status(200).json({
       success: true,

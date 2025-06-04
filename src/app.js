@@ -6,12 +6,24 @@ const cookieParser = require('cookie-parser');
 const app = express();
 const port = process.env.PORT || 4000;
 
+const allowedOrigins = [
+  'http://localhost:5173',
+  'https://architechx.netlify.app'
+];
+
 app.use(cors({
-    origin: 'https://architechx.netlify.app' || 'http://localhost:5173',
-    methods: ['GET', 'POST', 'PUT', 'DELETE'],
-    allowedHeaders: ['Content-Type', 'Authorization'],
-    withCredentials: true,
+  origin: function (origin, callback) {
+    if (!origin || allowedOrigins.includes(origin)) {
+      callback(null, true);
+    } else {
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
+  methods: ['GET', 'POST', 'PUT', 'DELETE'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
+  credentials: true,
 }));
+
 
 // Use only express.json() and express.urlencoded()
 app.use(cookieParser());
