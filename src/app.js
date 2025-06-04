@@ -34,6 +34,10 @@ app.use(express.urlencoded({ extended: true }));
 const routes = require("./routes/auth.routes.js");
 app.use('/api/v1', routes);
 
+app.get("/health", (req, res) => {
+    res.status(200).json({ message: "Server is healthy" });
+});
+
 // DB connection
 const { connectDB } = require('./config');
 connectDB();
